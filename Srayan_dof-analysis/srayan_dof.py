@@ -269,7 +269,7 @@ def fit_square_to_lineprof(im, frame, positions, disp=False):
 def get_mtf(im, frame, positions, disp=False):
     idealsquare, idealgrating = fit_square_to_lineprof(im, frame, positions)
 
-    ft_im, freqs_im = fourier(im[13])
+    ft_im, freqs_im = fourier(im[frame])
     ft_ideal, freqs_ideal = fourier(idealgrating)
 
     mtf = 1/((np.abs(ft_ideal)[:,ft_ideal.shape[1]//2])/(np.abs(ft_im)[:,ft_im.shape[1]//2]))[1:]
