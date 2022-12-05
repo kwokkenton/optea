@@ -130,3 +130,7 @@ ui-tests/playwright-report
 
 # numpy binary data files
 *.npy
+
+# images
+*.tif
+*.tiff
