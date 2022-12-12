@@ -250,7 +250,7 @@ def peak_height_plots(paths, positions_lists, imgnames):
     plt.show()
 
 
-def fit_square_to_lineprof(im, frame, positions, disp=False):
+def fit_square_to_lineprof(im, frame, positions, init_f, disp=False):
     def rect(t, ampl, pxperline, offset):
         return ampl * sp.signal.square(t * (2 * np.pi) / pxperline * 2) / 2 + offset
 
@@ -270,7 +270,7 @@ def fit_square_to_lineprof(im, frame, positions, disp=False):
         plt.xlabel("pixels")
         plt.ylabel("amplitude")
 
-    popt, pcov = sp.optimize.curve_fit(sine, t, lineprof, p0=[40000, 31, 25000])
+    popt, pcov = sp.optimize.curve_fit(sine, t, lineprof, p0=[40000, init_f, 25000])
     ampl, pxperline, offset = popt
 
     idealsquare = rect(t, ampl, pxperline, offset)
@@ -330,19 +330,23 @@ def get_mtf(im, frame, positions, disp=False):
     return mtf
 
 
-def get_mtf_peakdivide(im, frame, positions, thresh=0.25e9):
+def get_mtf_peakdivide(
+    im, frame, positions, init_f, thresh_true=0, thresh_ideal=0.25e9
+):
 
     idealsquare, idealgrating = fit_square_to_lineprof(
-        im, 13, positions
+        im, frame, positions, init_f, disp=True
     )  # fit in-focus
 
     ft_im, freqs_im = fourier(im[frame])
     ft_ideal, freqs_ideal = fourier(idealgrating)
 
     plt.figure(figsize=(4, 3))
-    peaks_im, props_im = fft_find_peaks(im[frame], disp=True)
+    peaks_im, props_im = fft_find_peaks(im[frame], thresh=thresh_true, disp=True)
     plt.figure(figsize=(4, 3))
-    peaks_ideal, props_ideal = fft_find_peaks(idealgrating, thresh=thresh, disp=True)
+    peaks_ideal, props_ideal = fft_find_peaks(
+        idealgrating, thresh=thresh_ideal, disp=True
+    )
 
     d = {
         "image_indices": peaks_im,
