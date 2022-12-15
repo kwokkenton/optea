@@ -57,9 +57,9 @@ void bounce()
 
   while (nCounter++ < 1000)
   {
-    mx.setPoint(r, c, false);
-    // r += dR;
-    // c += dC;
+    // mx.setPoint(r, c, false);
+    r += dR;
+    c += dC;
     // Serial.print(c);
     mx.setPoint(r, c, true);
     delay(DELAYTIME/2);
