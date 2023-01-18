@@ -1,4 +1,11 @@
-# imports
+"""
+OPTea: all functions
+OPT MSci project
+Srayan Gangopadhyay & Kenton Kwok
+Jan 2023
+"""
+
+# IMPORTS
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy as sp
@@ -9,11 +16,72 @@ from skimage import io
 from skimage.transform import iradon
 from scipy.signal import find_peaks
 from mpl_toolkits.mplot3d import Axes3D
-from celluloid import Camera
+from celluloid import Camera  # for animation
 from IPython.display import HTML
 from tqdm import tqdm
 
-# general image handling
+"""
+Guide to variables
+------------------
+GENERAL IMAGE HANDLING
+* for functions relating to stacks, `path` should be a string to a folder
+    containing an image stack with filename "MMStack_Pos0.ome.tif".
+    To load single .tiff images, use `io.imread` directly.
+* `img` should be a 2D numpy array containing a single image
+* `imgs` should be a 3D numpy array containing a stack of images
+* `positions` should be a list, containing the depths for each image in
+    a stack, in mm
+* set kwarg `show` to True to display extra plots, useful for debugging
+"""
+
+# GENERAL IMAGE HANDLING
+
+
+def load_stack(path, x_min=400, x_max=700, y_min=300, y_max=600, show=False):
+    imgs = io.imread(path + "/MMStack_Pos0.ome.tif")[:, x_min:x_max, y_min:y_max]
+    if show:
+        plt.imshow(imgs[0], cmap="gray")
+        plt.title(f"Image 1 of {len(imgs)}")
+        plt.show()
+    print(f"Loaded stack of {imgs.shape[0]} images, dimensions {imgs.shape[1:]}")
+    return imgs
+
+
+def average_stack(imgs, im_per_pos=5, show=False):
+    # adapted from: https://stackoverflow.com/a/69721142
+    image_sets = imgs.reshape(
+        (len(imgs) // im_per_pos, im_per_pos, imgs.shape[1], imgs.shape[2])
+    )
+    avg_stack = np.mean(image_sets, axis=1)
+    if show:
+        plt.imshow(avg_stack[0], cmap="gray")
+        plt.title(f"Image 1 of {len(avg_stack)}")
+        plt.show()
+    print(f"Averaged original stack of {len(imgs)} down to {len(avg_stack)}.")
+    return avg_stack
+
+
+def remove_background(imgs, bg_light, bg_dark, show=False):
+    # adapted from: https://stackoverflow.com/a/73082666
+    imgs_minus_bg = np.clip(imgs - bg_dark, 0, imgs.max())
+    light_minus_bg = np.clip(bg_light - bg_dark, 0, bg_light.max())
+    divided = np.clip(imgs_minus_bg / light_minus_bg, 0, imgs_minus_bg.max())
+    if show:
+        f, axes = plt.subplots(2, 2, figsize=(10, 10))
+        axes[0][0].imshow(imgs[0], cmap="gray")
+        axes[0][0].set_title(f"imgs, 1 of {len(imgs)}")
+        axes[0][1].imshow(imgs_minus_bg[0], cmap="gray")
+        axes[0][1].set_title(f"imgs_minus_bg, 1 of {len(imgs_minus_bg)}")
+        axes[1][0].imshow(light_minus_bg[0], cmap="gray")
+        axes[1][0].set_title(f"light_minus_bg, 1 of {len(light_minus_bg)}")
+        axes[1][1].imshow(divided[0], cmap="gray")
+        axes[1][1].set_title(f"divided, 1 of {len(divided)}")
+        plt.tight_layout()
+        plt.show()
+    print(f"Removed background and divided illumination from {len(divided)} images.")
+    return divided
+
+
 def add_position_labels(axes, slices, positions):
     """
     Given 2x2 subplot axes intended to display each quartile
@@ -561,48 +629,3 @@ def disp_slices(reconstructed):
 ###
 # averaging
 ###
-
-
-def load_stack(path, x_min=400, x_max=700, y_min=300, y_max=600, show=False):
-    imgs = io.imread(path + "/MMStack_Pos0.ome.tif")[:, x_min:x_max, y_min:y_max]
-    if show:
-        plt.imshow(imgs[0])
-        plt.title("First image")
-        plt.show()
-    print(f"Loaded stack of {imgs.shape[0]} images, dimensions {imgs.shape[1:]}")
-    return imgs
-
-
-def average_stack(imgs, im_per_pos=5, show=False):
-    # adapted from: https://stackoverflow.com/a/69721142
-    image_sets = imgs.reshape(
-        (len(imgs) // im_per_pos, im_per_pos, imgs.shape[1], imgs.shape[2])
-    )
-    avg_stack = np.mean(image_sets, axis=1)
-    if show:
-        plt.imshow(avg_stack[0])
-        plt.title("First image")
-        plt.show()
-    print(f"Averaged original stack of {len(imgs)} down to {len(avg_stack)}.")
-    return avg_stack
-
-
-def remove_background(imgs, bg_light, bg_dark, show=False):
-    # adapted from: https://stackoverflow.com/a/73082666
-    imgs_minus_bg = np.clip(imgs - bg_dark, 0, imgs.max())
-    light_minus_bg = np.clip(bg_light - bg_dark, 0, bg_light.max())
-    divided = np.clip(imgs_minus_bg / light_minus_bg, 0, imgs_minus_bg.max())
-    if show:
-        f, axes = plt.subplots(2, 2, figsize=(10, 10))
-        axes[0][0].imshow(imgs[0])
-        axes[0][0].set_title("First image, imgs")
-        axes[0][1].imshow(imgs_minus_bg[0])
-        axes[0][1].set_title("First image, imgs_minus_bg")
-        axes[1][0].imshow(light_minus_bg[0])
-        axes[1][0].set_title("First image, light_minus_bg")
-        axes[1][1].imshow(divided[0])
-        axes[1][1].set_title("First image, divided")
-        plt.tight_layout()
-        plt.show()
-    print(f"Removed background and divided illumination from {len(divided)} images.")
-    return divided
