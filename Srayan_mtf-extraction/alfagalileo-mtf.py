@@ -119,11 +119,19 @@ class IMaGE(object):
 
 
 if __name__ == "__main__":
+    from skimage import io
+
+    # data_dir = "../../data_store/"
+    # bg_dir = data_dir + "/2023-01-17 background images"
+    # img_dir = data_dir + "/2023-01-17 edge redone"
+
+    # img_path = img_dir + "/2023-01-17 edge in water f-a"
+
     plt.figure()
     plt.title("Testing Image")
     plt.xlabel(r"M")
     plt.ylabel(r"N")
-    im = plt.imread("2022-12-15 edge in water f6-rgb.tif")
+    im = io.imread("2023-01-17 edge in water f-a-64-rgb.tif")
     a = IMaGE(fit=True)
 
     plt.imshow(im, cmap="gray")
