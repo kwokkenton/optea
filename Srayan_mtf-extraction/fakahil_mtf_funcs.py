@@ -148,7 +148,7 @@ def remove_background(imgs, bg_light, bg_dark, show=False):
     return divided
 
 
-def allComputeMTF(edge):
+def allComputeMTF(edge, position, plot=False):
     rows = np.arange(edge.shape[0]) 
     n_rows = len(rows) 
     i = 0
@@ -229,10 +229,14 @@ def allComputeMTF(edge):
     mtf = np.abs(mtf)
     mtf = mtf/mtf.max()
     mtf2 = mtf[:edge.shape[1]]
-    plt.plot(f[f <= n_rows / 2], mtf[f <= n_rows / 2])
-    plt.scatter(f2, mtf2,label='Slanted edge')
-    plt.xlim(0,0.5)
-    plt.legend()
-    plt.xlabel('cycles / pixel')
-    plt.ylabel('MTF')
-    # plt.show()
+    # plt.plot(f[f <= n_rows / 2], mtf[f <= n_rows / 2])
+
+    if plot:
+        plt.plot(f2/6.45e-3, mtf2, '-.', label=f'{position} mm')
+        plt.xlim(0,0.5/6.45e-3)
+        plt.legend()
+        plt.xlabel('line pairs / mm')
+        plt.ylabel('MTF')
+        # plt.show()
+    
+    return f2/6.45e-3, mtf2
