@@ -97,13 +97,13 @@ def align_images(img1, img2):
     return optimal
 
 
-def align_images_debug(img1, img2):
+def align_images_debug(img1, img2, frac=4):
     """
     Slide two images past each other and find offset which minimises misalignment
     """
 
     width = img1.shape[1]
-    frac = 4  # decreasing factor tries larger range of offsets
+    frac = frac  # decreasing factor tries larger range of offsets
     offsets = np.arange(
         -width // frac, width // frac
     )  # working with integer offsets only
@@ -114,13 +114,13 @@ def align_images_debug(img1, img2):
     return optimal, offsets, misalignments
 
 
-def plot_alignment_debug(im):
+def plot_alignment_debug(im, frac=4):
     """
     Split image, align front and back projections, and plot
     """
 
     img1, img2 = split_images(im)
-    optimal, offsets, misalignments = align_images_debug(img1, img2)
+    optimal, offsets, misalignments = align_images_debug(img1, img2, frac)
     f, axes = plt.subplots(1, 2)
     axes[0].imshow(overlay_images(img1, img2, 0).astype(np.uint8))  # rescale to [0,255]
     axes[0].set_title("Original")
