@@ -265,7 +265,7 @@ def gen_MTF_plots(
     plt.imshow(
         _ExtractPatch(
             edge[0], np.array(edge_start), np.array(edge_end), desired_width, crop_ratio
-        )
+        ), cmap='gray'
     )
     plt.title("Extracted patch")
     plt.show()
@@ -324,7 +324,6 @@ def gen_MTF_plots(
     plt.xlabel("line pairs per mm")
     plt.ylabel("MTF")
     plt.title(f"MTF at f/{f_number}")
-    plt.tight_layout()
     if save:
         plt.savefig(f"plots/selection-mtfs-f{f_number}.png", dpi=1000)
     plt.show()
@@ -357,9 +356,8 @@ def gen_MTF_plots(
     plt.xlim(0, 0.5 / 6.45e-3)
     plt.xlabel("line pairs per mm")
     plt.ylabel("Defocus (mm)")
-    plt.title("MTF versus defocus at f/6")
+    plt.title(f"MTF versus defocus at f/{f_number}")
     plt.colorbar(ticks=list(np.linspace(0, 1, 11)))
-    plt.tight_layout()
     if save:
         plt.savefig(f"plots/contour-f{f_number}.png", dpi=1000)
     plt.show()
