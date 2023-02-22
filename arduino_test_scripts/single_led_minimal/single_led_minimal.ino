@@ -10,6 +10,7 @@
 // SPI hardware interface
 MD_MAX72XX mx = MD_MAX72XX(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
 
+<<<<<<< HEAD
 void led_square_raster(int c_start, int r_start, int edge_length, int led_delay)
 {
   // central 4 squares (r: 0-7, c: 40 - 55, 72-87)
@@ -58,19 +59,37 @@ void led_single(int c, int r)
     //delay(1000); 
   }
 
+=======
+void led()
+{
+  int  r = 0, c = 32;
+  mx.setPoint(r, c, true);
+>>>>>>> 7cbeb9d5fc2631b1fb40386410f37cc90403d231
 }
 
 void setup()
 {
   mx.begin();
   mx.clear();
+<<<<<<< HEAD
   // led_square_raster(71, 0, 15, 50);
+=======
+>>>>>>> 7cbeb9d5fc2631b1fb40386410f37cc90403d231
 }
 
 void loop()
 {
 #if 1
+<<<<<<< HEAD
     led_single(111, 7);
 //  led_square_raster();
 #endif
 }
+=======
+  led();
+#endif
+}
+
+
+
+>>>>>>> 7cbeb9d5fc2631b1fb40386410f37cc90403d231
