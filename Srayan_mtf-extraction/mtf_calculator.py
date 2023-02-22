@@ -10,6 +10,7 @@ import math
 import numpy as np
 from skimage import io
 import matplotlib.pyplot as plt
+import itertools
 
 
 def _ExtractPatch(sample, edge_start, edge_end, desired_width, crop_ratio):
@@ -160,22 +161,26 @@ def Compute(sample, edge_start, edge_end, desired_width, crop_ratio, use_50p=Tru
 # OUR FUNCTIONS #
 #################
 
+
 def load_stack(path, x_min=400, x_max=700, y_min=300, y_max=600, show=False):
-    imgs = io.imread(path+'/MMStack_Pos0.ome.tif')[:, x_min:x_max, y_min:y_max]
+    imgs = io.imread(path + "/MMStack_Pos0.ome.tif")[:, x_min:x_max, y_min:y_max]
     if show:
         plt.imshow(imgs[0], cmap="gray")
-        plt.title(f'Image 1 of {len(imgs)}')
+        plt.title(f"Image 1 of {len(imgs)}")
         plt.show()
     print(f"Loaded stack of {imgs.shape[0]} images, dimensions {imgs.shape[1:]}")
     return imgs
 
+
 def average_stack(imgs, im_per_pos=5, show=False):
-    # adapted from: https://stackoverflow.com/a/69721142
-    image_sets = imgs.reshape((len(imgs)//im_per_pos, im_per_pos, imgs.shape[1], imgs.shape[2]))
+    # adapted from: https://stackoverflow.com/a/6972selection[142
+    image_sets = imgs.reshape(
+        (len(imgs) // im_per_pos, im_per_pos, imgs.shape[1], imgs.shape[2])
+    )
     avg_stack = np.mean(image_sets, axis=1)
     if show:
         plt.imshow(avg_stack[0], cmap="gray")
-        plt.title(f'Image 1 of {len(avg_stack)}')
+        plt.title(f"Image 1 of {len(avg_stack)}")
         plt.show()
     print(f"Averaged original stack of {len(imgs)} down to {len(avg_stack)}.")
     return avg_stack
@@ -200,3 +205,163 @@ def remove_background(imgs, bg_light, bg_dark, show=False):
         plt.show()
     print(f"Removed background and divided illumination from {len(divided)} images.")
     return divided
+
+
+def load_and_divide(img_dir, bg_dir, img_name, bg_light_name, bg_dark_name, crop):
+    img_path = str(img_dir + "/" + img_name)
+    imgs = load_stack(
+        img_path, x_min=crop[0], x_max=crop[1], y_min=crop[2], y_max=crop[3], show=True
+    )
+
+    avg_stack = average_stack(imgs)
+
+    bg_light_path = bg_dir + "/" + bg_light_name
+    bg_dark_path = bg_dir + "/" + bg_dark_name
+    bg_light = average_stack(
+        load_stack(
+            bg_light_path, x_min=crop[0], x_max=crop[1], y_min=crop[2], y_max=crop[3]
+        )
+    )
+    bg_dark = average_stack(
+        load_stack(
+            bg_dark_path, x_min=crop[0], x_max=crop[1], y_min=crop[2], y_max=crop[3]
+        )
+    )
+
+    divided = remove_background(avg_stack, bg_light, bg_dark)
+    return divided
+
+
+def allComputeMTF(
+    edge, position, edge_start, edge_end, desired_width, crop_ratio, plot=False
+):
+    _, freqs, attns = Compute(
+        edge, np.array(edge_start), np.array(edge_end), desired_width, crop_ratio
+    )
+
+    if plot:
+        plt.plot(freqs / 6.45e-3, attns, "-.", label=f"{position} mm")
+        plt.xlim(0, 0.5 / 6.45e-3)
+        plt.legend()
+        plt.xlabel("line pairs / mm")
+        plt.ylabel("MTF")
+
+    return freqs / 6.45e-3, attns
+
+
+def gen_MTF_plots(
+    edge,
+    f_number,
+    depths,
+    selection,
+    edge_start,
+    edge_end,
+    desired_width,
+    crop_ratio,
+    save=False,
+):
+    # plot the extracted path as visual check
+    plt.figure(figsize=(2, 2))
+    plt.imshow(
+        _ExtractPatch(
+            edge[0], np.array(edge_start), np.array(edge_end), desired_width, crop_ratio
+        )
+    )
+    plt.title("Extracted patch")
+    plt.show()
+
+    # generate the plots
+    positions = []
+    frequencies = []
+    mtfs = []
+
+    focus = depths[len(depths) // 2]
+
+    # COMPUTING MTFS
+    for i in np.arange(0, len(edge), 1):
+        freqs, mtf = allComputeMTF(
+            edge[i],
+            depths[i],
+            edge_start,
+            edge_end,
+            desired_width,
+            crop_ratio,
+            plot=True,
+        )
+        positions.append(depths[i])
+        frequencies.append(freqs)
+        mtfs.append(mtf)
+
+    # ALL MTF PLOT
+
+    plt.title(f"all mtfs, f/{f_number}")
+    if save:
+        plt.savefig(f"plots/all-mtfs-f{f_number}.png")
+    plt.show()
+
+    # SELECTION OF MTFS
+    plt.plot(
+        frequencies[selection[0]],
+        mtfs[selection[0]],
+        "g-",
+        label=f"{np.abs(positions[selection[0]]-focus)}",
+    )
+    plt.plot(
+        frequencies[selection[1]],
+        mtfs[selection[1]],
+        "g--",
+        label=f"{np.abs(positions[selection[1]]-focus)}",
+    )
+    plt.plot(
+        frequencies[selection[2]],
+        mtfs[selection[2]],
+        "g:",
+        label=f"{np.abs(positions[selection[2]]-focus)}",
+    )
+
+    plt.xlim(0, 0.5 / 6.45e-3)
+    plt.legend(title="Defocus (mm)")
+    plt.xlabel("line pairs per mm")
+    plt.ylabel("MTF")
+    plt.title(f"MTF at f/{f_number}")
+    plt.tight_layout()
+    if save:
+        plt.savefig(f"plots/selection-mtfs-f{f_number}.png", dpi=1000)
+    plt.show()
+
+    # JAMES-STYLE PLOT
+    mtf_len = min([len(mtf) for mtf in mtfs])
+    mtfs_cropped = [mtf[:mtf_len] for mtf in mtfs]
+    all_mtfs = list(itertools.chain.from_iterable(mtfs_cropped))
+    MTF = np.array(all_mtfs).reshape(len(depths), mtf_len)
+
+    index_20lp = 52
+    mtf_20lp = MTF[:, index_20lp]
+    min_pos = np.min((np.array(positions) - focus)[mtf_20lp >= 0.2])
+    max_pos = np.max((np.array(positions) - focus)[mtf_20lp >= 0.2])
+
+    plt.contourf(
+        frequencies[0][:mtf_len],
+        np.array(positions) - focus,
+        MTF,
+        100,
+        cmap=plt.cm.get_cmap("Greens", 10),
+    )
+    plt.plot(
+        [frequencies[0][index_20lp], frequencies[0][index_20lp]],
+        [min_pos, max_pos],
+        "-w",
+        linewidth="5",
+    )
+
+    plt.xlim(0, 0.5 / 6.45e-3)
+    plt.xlabel("line pairs per mm")
+    plt.ylabel("Defocus (mm)")
+    plt.title("MTF versus defocus at f/6")
+    plt.colorbar(ticks=list(np.linspace(0, 1, 11)))
+    plt.tight_layout()
+    if save:
+        plt.savefig(f"plots/contour-f{f_number}.png", dpi=1000)
+    plt.show()
+
+    print(f"Depth of field = {max_pos - min_pos}")
