@@ -11,6 +11,7 @@ import numpy as np
 from skimage import io
 import matplotlib.pyplot as plt
 import itertools
+from scipy.fft import fft, fftfreq
 
 
 def _ExtractPatch(sample, edge_start, edge_end, desired_width, crop_ratio):
@@ -152,6 +153,7 @@ def Compute(sample, edge_start, edge_end, desired_width, crop_ratio, use_50p=Tru
     """
     patch = _ExtractPatch(sample, edge_start, edge_end, desired_width, crop_ratio)
     angle, centers = _FindEdgeSubPix(patch, desired_width)
+    print(f'Detected edge angle: {np.rad2deg(angle)}')
     psf = _AccumulateLine(patch, centers)
     freqs, attns = _GetResponse(psf, angle)
     return _FindMTF50P(freqs, attns, use_50p), freqs, attns
@@ -260,8 +262,8 @@ def gen_MTF_plots(
     crop_ratio,
     save=False,
 ):
-    # plot the extracted path as visual check
-    plt.figure(figsize=(2, 2))
+    # plot the extracted patch as visual check
+    plt.figure(figsize=(1, 1))
     plt.imshow(
         _ExtractPatch(
             edge[0], np.array(edge_start), np.array(edge_end), desired_width, crop_ratio
@@ -325,6 +327,7 @@ def gen_MTF_plots(
     plt.ylabel("MTF")
     plt.title(f"MTF at f/{f_number}")
     if save:
+        plt.tight_layout()
         plt.savefig(f"plots/selection-mtfs-f{f_number}.png", dpi=1000)
     plt.show()
 
@@ -334,7 +337,7 @@ def gen_MTF_plots(
     all_mtfs = list(itertools.chain.from_iterable(mtfs_cropped))
     MTF = np.array(all_mtfs).reshape(len(depths), mtf_len)
 
-    index_20lp = 52
+    index_20lp = 61
     mtf_20lp = MTF[:, index_20lp]
     min_pos = np.min((np.array(positions) - focus)[mtf_20lp >= 0.2])
     max_pos = np.max((np.array(positions) - focus)[mtf_20lp >= 0.2])
@@ -359,7 +362,31 @@ def gen_MTF_plots(
     plt.title(f"MTF versus defocus at f/{f_number}")
     plt.colorbar(ticks=list(np.linspace(0, 1, 11)))
     if save:
+        plt.tight_layout()
         plt.savefig(f"plots/contour-f{f_number}.png", dpi=1000)
     plt.show()
 
     print(f"Depth of field = {max_pos - min_pos}")
+
+    # FOURIER TRANSFORM
+    in_focus = selection[0]
+
+    freqs = frequencies[0][:mtf_len]
+    t_freqs = freqs[:len(freqs)//2]
+    t_MTF = MTF[in_focus][:len(MTF[in_focus])//2]
+
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    ax[0].plot(t_freqs, t_MTF)
+    ax[0].set_title(f'in-focus MTF at f/{f_number}')
+    ax[0].set_xlabel('line pairs per millimetre')
+
+    N = len(t_freqs)
+    T = np.mean(np.diff(t_freqs))
+
+    yf = fft(t_MTF)
+    xf = fftfreq(N, T)
+    ax[1].plot(xf*1000, 2.0/N * np.abs(yf), '.')
+    ax[1].set_title('FT(MTF)')
+    ax[1].set_xlim(-100, 100)
+    ax[1].set_xlabel('distance (microns)')
+    plt.show()
