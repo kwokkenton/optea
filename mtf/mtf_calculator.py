@@ -11,7 +11,7 @@ import numpy as np
 from skimage import io
 import matplotlib.pyplot as plt
 import itertools
-from scipy.fft import fft, fftfreq
+import pickle
 
 
 def _ExtractPatch(sample, edge_start, edge_end, desired_width, crop_ratio):
@@ -153,7 +153,7 @@ def Compute(sample, edge_start, edge_end, desired_width, crop_ratio, use_50p=Tru
     """
     patch = _ExtractPatch(sample, edge_start, edge_end, desired_width, crop_ratio)
     angle, centers = _FindEdgeSubPix(patch, desired_width)
-    print(f'Detected edge angle: {np.rad2deg(angle)}')
+    # print(f'Detected edge angle: {np.rad2deg(angle)}')
     psf = _AccumulateLine(patch, centers)
     freqs, attns = _GetResponse(psf, angle)
     return _FindMTF50P(freqs, attns, use_50p), freqs, attns
@@ -212,7 +212,7 @@ def remove_background(imgs, bg_light, bg_dark, show=False):
 def load_and_divide(img_dir, bg_dir, img_name, bg_light_name, bg_dark_name, crop):
     img_path = str(img_dir + "/" + img_name)
     imgs = load_stack(
-        img_path, x_min=crop[0], x_max=crop[1], y_min=crop[2], y_max=crop[3], show=True
+        img_path, x_min=crop[0], x_max=crop[1], y_min=crop[2], y_max=crop[3], show=False
     )
 
     avg_stack = average_stack(imgs)
@@ -260,7 +260,8 @@ def gen_MTF_plots(
     edge_end,
     desired_width,
     crop_ratio,
-    save=False,
+    save_plots=False,
+    save_mtfs = False
 ):
     # plot the extracted patch as visual check
     plt.figure(figsize=(1, 1))
@@ -297,7 +298,7 @@ def gen_MTF_plots(
     # ALL MTF PLOT
 
     plt.title(f"all mtfs, f/{f_number}")
-    if save:
+    if save_plots:
         plt.savefig(f"plots/all-mtfs-f{f_number}.png")
     plt.show()
 
@@ -326,7 +327,7 @@ def gen_MTF_plots(
     plt.xlabel("line pairs per mm")
     plt.ylabel("MTF")
     plt.title(f"MTF at f/{f_number}")
-    if save:
+    if save_plots:
         plt.tight_layout()
         plt.savefig(f"plots/selection-mtfs-f{f_number}.png", dpi=1000)
     plt.show()
@@ -361,32 +362,17 @@ def gen_MTF_plots(
     plt.ylabel("Defocus (mm)")
     plt.title(f"MTF versus defocus at f/{f_number}")
     plt.colorbar(ticks=list(np.linspace(0, 1, 11)))
-    if save:
+    if save_plots:
         plt.tight_layout()
         plt.savefig(f"plots/contour-f{f_number}.png", dpi=1000)
     plt.show()
 
     print(f"Depth of field = {max_pos - min_pos}")
 
-    # FOURIER TRANSFORM
-    in_focus = selection[0]
+    mtf_tuple = (frequencies[0][:mtf_len], np.array(positions) - focus, MTF)
 
-    freqs = frequencies[0][:mtf_len]
-    t_freqs = freqs[:len(freqs)//2]
-    t_MTF = MTF[in_focus][:len(MTF[in_focus])//2]
+    if save_mtfs:
+        with open(f'mtfs/f{f_number}_mtf.pickle', 'wb') as f:
+            pickle.dump(mtf_tuple, f)
 
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    ax[0].plot(t_freqs, t_MTF)
-    ax[0].set_title(f'in-focus MTF at f/{f_number}')
-    ax[0].set_xlabel('line pairs per millimetre')
-
-    N = len(t_freqs)
-    T = np.mean(np.diff(t_freqs))
-
-    yf = fft(t_MTF)
-    xf = fftfreq(N, T)
-    ax[1].plot(xf*1000, 2.0/N * np.abs(yf), '.')
-    ax[1].set_title('FT(MTF)')
-    ax[1].set_xlim(-100, 100)
-    ax[1].set_xlabel('distance (microns)')
-    plt.show()
+    # return mtf_tuple
