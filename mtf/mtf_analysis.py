@@ -46,7 +46,7 @@ def mtf_ft_plot(freqs, MTF, in_focus, f_number):
     ax[1].plot(xf_2 * 1000, 2.0 / N * np.abs(yf_exact), "g.", label='FT{"exact"}')
     ax[1].legend()
     ax[1].set_title("FT(MTF)")
-    ax[1].set_xlim(-100, 100)
+    ax[1].set_xlim(-50, 50)
     ax[1].set_xlabel("distance (microns)")
     plt.show()
 
