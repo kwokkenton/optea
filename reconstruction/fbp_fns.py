@@ -9,6 +9,7 @@ from tifffile import imsave
 from skimage import io
 import matplotlib.pyplot as plt
 from tqdm import tqdm, trange
+import gc
 
 
 # FUNCTION DEFINITIONS
@@ -72,6 +73,9 @@ def reconstruct(im, output_dir):
     reconstruction_fbp = run_fbp(im, output_dir, 65535, save_recon=False, progbar=True)
     max_val = np.max(reconstruction_fbp)
     print(f'Reconstructed, max={max_val}. Repeating to rescale.')
+    if 'reconstruction_fbp' in globals():
+        del reconstruction_fbp
+    _ = gc.collect()
     reconstruction_fbp = run_fbp(im, output_dir, max_val, progbar=True)
     print(f'Saved reconstruction to {output_dir}.')
     return reconstruction_fbp
@@ -98,6 +102,7 @@ def align(im, bead_row):
         crop_im = bead_im[:,:,offset:]
         reconstruction_fbp = run_fbp(crop_im, None, 65535, save_recon=False)
         maxes.append(np.max(reconstruction_fbp))
+    plt.figure(figsize=(5,4))
     plt.plot(offset_list, maxes, '.')
     plt.xlabel('offset')
     plt.ylabel('maximum value')
