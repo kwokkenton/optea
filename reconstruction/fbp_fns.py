@@ -120,9 +120,9 @@ def align(im, bead_row):
         recon_misaligned = run_fbp(bead_im, None, 65535, save_recon=False)
         recon_aligned = run_fbp(crop_im, None, 65535, save_recon=False)
         fig, axs = plt.subplots(1, 2)
-        axs[0].imshow(recon_misaligned[len(recon_misaligned)//2])
+        axs[0].imshow(np.sum(recon_misaligned, axis=0))
         axs[0].set_title('Original bead recon')
-        axs[1].imshow(recon_misaligned[len(recon_misaligned)//2])
+        axs[1].imshow(np.sum(recon_aligned, axis=0))
         axs[1].set_title('Aligned bead recon')
         plt.show()
         return im[:,:,:-optimal]
