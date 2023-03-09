@@ -46,6 +46,10 @@ def run_fbp(im, output_dir, max_val, save_recon=True, progbar=False):
         algorithm_id = astra.algorithm.create(alg_cfg)
         astra.algorithm.run(algorithm_id)
         reconstruction = astra.data2d.get(reconstruction_id)
+        
+        plt.imshow(reconstruction, cmap='gray')
+        plt.colorbar()
+        plt.show()
 
         # Limit and scale reconstruction.
         reconstruction[reconstruction < 0] = 0
@@ -116,7 +120,7 @@ def align(im, bead_row):
         plt.show()
         return im
     elif optimal<0:
-        crop_im = bead_im[:,:,:-optimal]
+        crop_im = bead_im[:,:,:optimal]
         recon_misaligned = run_fbp(bead_im, None, 65535, save_recon=False)
         recon_aligned = run_fbp(crop_im, None, 65535, save_recon=False)
         fig, axs = plt.subplots(1, 2)
@@ -125,7 +129,7 @@ def align(im, bead_row):
         axs[1].imshow(np.sum(recon_aligned, axis=0))
         axs[1].set_title('Aligned bead recon')
         plt.show()
-        return im[:,:,:-optimal]
+        return im[:,:,:optimal]
     elif optimal>0:
         crop_im = bead_im[:,:,optimal:]
         recon_misaligned = run_fbp(bead_im, None, 65535, save_recon=False)
