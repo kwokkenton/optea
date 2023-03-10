@@ -14,7 +14,7 @@ import gc
 
 # FUNCTION DEFINITIONS
 
-def run_fbp(im, output_dir, max_val, save_recon=True, progbar=False):    
+def run_fbp(im, output_dir='tmp_recon', minmax=None, save_recon=False, progbar=False):    
     # Turn into sinogram
     im = np.moveaxis(im, 0, -2).astype('float64')
 
@@ -47,14 +47,11 @@ def run_fbp(im, output_dir, max_val, save_recon=True, progbar=False):
         astra.algorithm.run(algorithm_id)
         reconstruction = astra.data2d.get(reconstruction_id)
         
-        plt.imshow(reconstruction, cmap='gray')
-        plt.colorbar()
-        plt.show()
-
         # Limit and scale reconstruction.
-        reconstruction[reconstruction < 0] = 0
-        reconstruction /= max_val
-        reconstruction = np.round(reconstruction * 65535).astype(np.uint16)
+        if minmax is not None:
+            min_val = minmax[0]
+            max_val = minmax[1]
+            reconstruction = (reconstruction - min_val) / (max_val - min_val) * 65535
 
         # Save reconstruction.
         if save_recon: 
@@ -74,13 +71,14 @@ def run_fbp(im, output_dir, max_val, save_recon=True, progbar=False):
 
 
 def reconstruct(im, output_dir):
-    reconstruction_fbp = run_fbp(im, output_dir, 65535, save_recon=False, progbar=True)
+    reconstruction_fbp = run_fbp(im, progbar=True)
+    min_val = np.min(reconstruction_fbp)
     max_val = np.max(reconstruction_fbp)
-    print(f'Reconstructed, max={max_val}. Repeating to rescale.')
+    print(f'Reconstructed, min={min_val}, max={max_val}. Repeating to rescale.')
     if 'reconstruction_fbp' in globals():
         del reconstruction_fbp
-    _ = gc.collect()
-    reconstruction_fbp = run_fbp(im, output_dir, max_val, progbar=True)
+    gc.collect()
+    reconstruction_fbp = run_fbp(im, output_dir=output_dir, minmax=[min_val, max_val], save_recon=True, progbar=True)
     print(f'Saved reconstruction to {output_dir}.')
     return reconstruction_fbp
 
@@ -94,17 +92,17 @@ def align(im, bead_row):
         # negative crops
         offset_list.append(-offset)
         crop_im = bead_im[:,:,:-offset]
-        reconstruction_fbp = run_fbp(crop_im, None, 65535, save_recon=False)
+        reconstruction_fbp = run_fbp(crop_im)
         maxes.append(np.max(reconstruction_fbp))
     # zero crop
     offset_list.append(0)
-    reconstruction_fbp = run_fbp(crop_im, None, 65535, save_recon=False)
+    reconstruction_fbp = run_fbp(crop_im)
     maxes.append(np.max(reconstruction_fbp))
     for offset in offsets:
         # positive crops
         offset_list.append(offset)
         crop_im = bead_im[:,:,offset:]
-        reconstruction_fbp = run_fbp(crop_im, None, 65535, save_recon=False)
+        reconstruction_fbp = run_fbp(crop_im)
         maxes.append(np.max(reconstruction_fbp))
     plt.figure(figsize=(5,4))
     plt.plot(offset_list, maxes, '.')
@@ -114,15 +112,15 @@ def align(im, bead_row):
     optimal = offset_list[np.argmax(maxes)]
     print(f'Best offset: {optimal} pixels')
     if optimal==0:
-        reconstruction_fbp = run_fbp(bead_im, None, 65535, save_recon=False)
+        reconstruction_fbp = run_fbp(bead_im)
         plt.imshow(reconstruction_fbp[len(reconstruction_fbp)//2])
         plt.title('Reconstructed bead')
         plt.show()
         return im
     elif optimal<0:
         crop_im = bead_im[:,:,:optimal]
-        recon_misaligned = run_fbp(bead_im, None, 65535, save_recon=False)
-        recon_aligned = run_fbp(crop_im, None, 65535, save_recon=False)
+        recon_misaligned = run_fbp(bead_im)
+        recon_aligned = run_fbp(crop_im)
         fig, axs = plt.subplots(1, 2)
         axs[0].imshow(np.sum(recon_misaligned, axis=0))
         axs[0].set_title('Original bead recon')
@@ -132,8 +130,8 @@ def align(im, bead_row):
         return im[:,:,:optimal]
     elif optimal>0:
         crop_im = bead_im[:,:,optimal:]
-        recon_misaligned = run_fbp(bead_im, None, 65535, save_recon=False)
-        recon_aligned = run_fbp(crop_im, None, 65535, save_recon=False)
+        recon_misaligned = run_fbp(bead_im)
+        recon_aligned = run_fbp(crop_im)
         fig, axs = plt.subplots(1, 2)
         axs[0].imshow(np.sum(recon_misaligned, axis=0))
         axs[0].set_title('Original bead recon')
