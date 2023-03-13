@@ -17,7 +17,7 @@ void triggerCamera(int cam_del)
   digitalWrite(7, HIGH);
   delay(cam_del);
   digitalWrite(7,LOW);
-  delay(cam_del);
+  //delay(cam_del);
 }
 
 
@@ -38,9 +38,22 @@ void led_circle(float c_0, float r_0, int radius, int led_delay, int cam_del)
 }
 }
 
-
-
 void led_all_raster(int led_delay, int cam_del)
+{
+  // loop through all leds, switch on if outside defined radius
+  for (int j=8; j<24; j++){ // FIX THIS!!!!
+    for (int i=8; i<24; i++){
+       mx.setPoint((7- j % 8), (i + 32*(j/8)), true);
+       triggerCamera(cam_del);
+       delay(led_delay);
+       mx.setPoint((7- j % 8), (i + 32*(j/8)), false);
+  }
+}
+}
+
+
+
+void led_square_raster(int led_delay, int cam_del)
 {
   // loop through all leds, switch on if outside defined radius
   for (int j=8; j<24; j++){
@@ -67,6 +80,12 @@ void led_circle_inside(float c_0, float r_0, int radius, int led_delay, int cam_
     }
   }
 }
+}
+
+
+void central_leds(int i, int j)
+{
+  mx.setPoint((7- j % 8), (i + 32*(j/8)), true);
 }
 
 
@@ -128,8 +147,12 @@ void setup()
   delay(led_delay); 
   mx.clear();
   delay(led_delay); 
+  // central_leds(15, 15);
+//  central_leds(15, 16);
+//  central_leds(16, 15);
+//  central_leds(16, 16);
   // led_square_raster(71, 0, 15, 50);
-  led_all_raster(10, 200);
+  led_square_raster(125, 200);
 //  led_circle_inside(15.5, 15.5, 5, 5, 2000);
 //  mx.setPoint((7- 16 % 8), (16 + 32*(16/8)), true);
 
