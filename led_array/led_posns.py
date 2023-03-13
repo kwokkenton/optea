@@ -102,20 +102,20 @@ def get_led_posns(array_width, circle_radius):
     bright_posns_real, dark_posns_real, darkfield_real = plot_mask_2(arr, ['Brightfield - actual', 'Darkfield - actual'])
     bright_posns_ideal, dark_posns_ideal, darkfield_ideal = plot_mask(arr, circle_mask, ['Brightfield - ideal', 'Darkfield - ideal'])
     
-    difference = darkfield_ideal-darkfield_real
+    difference = (darkfield_real-darkfield_ideal)+1
     sns.heatmap(difference, cmap=['black', 'r'])
-    plt.title(f'Missed LEDs ({np.count_nonzero(difference)})')
+    plt.title(f'Total LEDs actually imaged ({np.count_nonzero(difference)})')
     
     
 
     tb_phase_mask = x < x.size//2
-    top_posns, bottom_posns = plot_mask(arr, tb_phase_mask, ['Top', 'Bottom'])
+    top_posns, bottom_posns, _ = plot_mask(arr, tb_phase_mask, ['Top', 'Bottom'])
     
     lr_phase_array = np.zeros_like(arr)
     lr_phase_array[:, :x.size//2] = 1
     left_posns, right_posns = plot_array(lr_phase_array, ['Left', 'Right'])
 
-    return bright_posns, dark_posns, top_posns, bottom_posns, left_posns, right_posns
+    return bright_posns_real, dark_posns_real, top_posns, bottom_posns, left_posns, right_posns, difference
 
 
 def XinY(X, Y):
