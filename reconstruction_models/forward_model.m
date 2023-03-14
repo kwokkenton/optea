@@ -6,20 +6,21 @@
 %
 
 % Acquisition Parameters
-N_pixels = 1040;
+N_pixels = 1040; % horizontal number of pixels 
 e = 6.45e-3; % pixel size (mm)
-N_angles = 400;
+N_angles = 400; % number of angles in tomographic reconstruction
 
-% Aperture parameter
-w0 = 6.92e-6; % Minimum beam waist (m)
+% Optical parameters
+w0 = 6.92e-6; % Minimum beam waist in Gaussian model (m)
 lamb = 525e-9; % (m)
 
 % Reconstruction object
 P = phantom(N_pixels); % Shepp-logan phantom
 B = zeros(N_pixels, N_pixels); % Simulated bead phantom
-for idx= 520:50:1040
-    B(520, idx) = 40;
+for idx= 520:40:1040 % generate point objects at these equally spaced locations
+    B(520, idx) = 30;
 end
+figure
 imshow(B);
 colormap(hot);
 
@@ -30,18 +31,18 @@ nyquist_freq = 1/(2*e);
 frequencies = linspace(-nyquist_freq, nyquist_freq, N_pixels);
 
 
-% normal filter %%
-%focal_plane_shift = 0;  %(mm)
-%frequency_filter = create_gaussian_filter(frequencies, defocuses-focal_plane_shift, N_pixels, w0, lamb); 
+% normal filter %%%%%
+focal_plane_shift = 1.5;  %(mm)
+frequency_filter = create_gaussian_filter(frequencies, defocuses-focal_plane_shift, N_pixels, w0, lamb); 
 
-% focal scanning Gaussian frequency filter %%%%%%
-shifts = 0:0.75:3; 
-frequency_filter = create_gaussian_filter(frequencies, defocuses, N_pixels, w0, lamb)/length(shifts);
-for i= 0:length(shifts)-1
-    focal_plane_shift = shifts(i+1);
-    shifted_filter = create_gaussian_filter(frequencies, defocuses-focal_plane_shift, N_pixels, w0, lamb)/length(shifts);
-    frequency_filter = frequency_filter + shifted_filter;
-end
+% focal scanning Gaussian frequency filter (shifted and summed) %%%%%%
+% shifts = 0:0.75:3;  % (mm)
+% frequency_filter = create_gaussian_filter(frequencies, defocuses, N_pixels, w0, lamb)/length(shifts);
+% for i= 0:length(shifts)-1
+%     focal_plane_shift = shifts(i+1);
+%     shifted_filter = create_gaussian_filter(frequencies, defocuses-focal_plane_shift, N_pixels, w0, lamb)/length(shifts);
+%     frequency_filter = frequency_filter + shifted_filter;
+% end
 
 imshow(frequency_filter);
 colormap(hot);
@@ -53,12 +54,21 @@ fftshifted_MTF = fftshift(frequency_filter,2); % fftshift in frequency direction
 
 
 %% Run forward model
-im = forward(B, fftshifted_MTF, angles, N_pixels);
+sino = forward(B, fftshifted_MTF, angles, N_pixels);
 
 % Reconstruct OPT image
-imshow(iradon(im', -angles, 'linear','Ram-Lak',1,N_pixels));
-colormap(hot)
+figure('Name', 'Reconstruction');
+im = iradon(sino', -angles, 'linear','Ram-Lak',1,N_pixels);
+imshow(im);
+colormap(hot);
 
+%%
+%im_pad=padarray(im,[200 200]);
+[a, b]=size(im);
+imP = ImToPolar (im, 0, 1, b/2,2*a);
+figure('Name', 'Polar Transform')
+imshow(imP);
+colormap(hot);
 %% Functions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function sinogram = forward(slice, fftshifted_MTF, angles, N_pixels)
     % slice is a 2D matrix
