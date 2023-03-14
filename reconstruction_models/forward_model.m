@@ -4,7 +4,7 @@
 %
 %
 %
-
+close all
 % Acquisition Parameters
 N_pixels = 1040; % horizontal number of pixels 
 e = 6.45e-3; % pixel size (mm)
@@ -14,16 +14,19 @@ N_angles = 400; % number of angles in tomographic reconstruction
 w0 = 6.92e-6; % Minimum beam waist in Gaussian model (m)
 lamb = 525e-9; % (m)
 
-% Reconstruction object
-P = phantom(N_pixels); % Shepp-logan phantom
-B = zeros(N_pixels, N_pixels); % Simulated bead phantom
-for idx= 520:40:1040 % generate point objects at these equally spaced locations
-    B(520, idx) = 30;
-end
+% Define Reconstruction object
+% Case 1: Shepp-logan phantom
+% shepp_logan = phantom(N_pixels); 
+
+% Case 2: Simulated bead phantom
+% B = zeros(N_pixels, N_pixels); 
+% for idx= 520:40:1040 % generate point objects at these equally spaced locations
+%     B(520, idx) = 30;
+% end
+
 figure
 imshow(B);
 colormap(hot);
-
 %% creates Gaussian frequency filter
 
 defocuses = linspace(-N_pixels*e/2, N_pixels*e/2, N_pixels); % defocuses (mm)
@@ -47,11 +50,13 @@ frequency_filter = create_gaussian_filter(frequencies, defocuses-focal_plane_shi
 imshow(frequency_filter);
 colormap(hot);
 
+% Save for future use
+% save('shifted_filter.mat','frequency_filter');
+
 %% setup reconstruction variables
 %filter = zeros(N_pixels, N_pixels); % 2D frequency filter, dimensions of (defocuses, spatial frequencies)
 angles = 360/N_angles *(0:N_angles -1); % define acquisition angles
 fftshifted_MTF = fftshift(frequency_filter,2); % fftshift in frequency direction
-
 
 %% Run forward model
 sino = forward(B, fftshifted_MTF, angles, N_pixels);
@@ -62,32 +67,32 @@ im = iradon(sino', -angles, 'linear','Ram-Lak',1,N_pixels);
 imshow(im);
 colormap(hot);
 
-%%
+%% Convert into Polars
 %im_pad=padarray(im,[200 200]);
-[a, b]=size(im);
-imP = ImToPolar (im, 0, 1, b/2,2*a);
-figure('Name', 'Polar Transform')
-imshow(imP);
-colormap(hot);
+% [a, b]=size(im);
+% imP = ImToPolar (im, 0, 1, b/2,2*a);
+% figure('Name', 'Polar Transform')
+% imshow(imP);
+% colormap(hot);
 %% Functions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function sinogram = forward(slice, fftshifted_MTF, angles, N_pixels)
-    % slice is a 2D matrix
-    % fftshifted_MTF
-    % angles is an array of sampling angles
-    N_angles = length(angles);
-    sinogram = zeros(N_angles, N_pixels);
-    for idx = 1:N_angles
-        % rotates anticlockwise
-        rotated = imrotate(slice, angles(idx), 'crop');
-        % convolves each line in slice with PSF of that depth, in Fourier
-        % domain
-        fourier_image = fft(rotated, [], 2).* fftshifted_MTF ;
-        filtered = ifft(fourier_image, [], 2);
-        % then sums to get the projection (line integral)
-        projection = sum(filtered); 
-        sinogram(idx,:) = abs(projection);
-    end
-end
+% function sinogram = forward(slice, fftshifted_MTF, angles, N_pixels)
+%     % slice is a 2D matrix
+%     % fftshifted_MTF
+%     % angles is an array of sampling angles
+%     N_angles = length(angles);
+%     sinogram = zeros(N_angles, N_pixels);
+%     for idx = 1:N_angles
+%         % rotates anticlockwise
+%         rotated = imrotate(slice, angles(idx), 'crop');
+%         % convolves each line in slice with PSF of that depth, in Fourier
+%         % domain
+%         fourier_image = fft(rotated, [], 2).* fftshifted_MTF ;
+%         filtered = ifft(fourier_image, [], 2);
+%         % then sums to get the projection (line integral)
+%         projection = sum(filtered); 
+%         sinogram(idx,:) = abs(projection);
+%     end
+% end
 
 function frequency_filter = create_gaussian_filter(frequencies, defocuses, N_pixels, w0, lamb)
     % creates a Gaussian frequency filter
