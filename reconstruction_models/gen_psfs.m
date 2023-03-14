@@ -13,13 +13,13 @@ impulse_value = 10; % arbitrary value
 
 start_idx = 511;
 N = 32;
-end_idx = start + N -1; 
+end_idx = start_idx + N -1; 
 
 A = zeros(N*N);
 
 for x_pos = start_idx:end_idx
     for y_pos = start_idx:end_idx
-
+        tic
         % For each location
         % Create impulse response
         single_point = zeros(N_pixels, N_pixels); 
@@ -38,6 +38,7 @@ for x_pos = start_idx:end_idx
         
         % print out to check progress
         index
+        toc
     end
 end
 

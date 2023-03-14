@@ -35,7 +35,7 @@ frequencies = linspace(-nyquist_freq, nyquist_freq, N_pixels);
 
 
 % normal filter %%%%%
-focal_plane_shift = 1.5;  %(mm)
+focal_plane_shift = 0;  %(mm)
 frequency_filter = create_gaussian_filter(frequencies, defocuses-focal_plane_shift, N_pixels, w0, lamb); 
 
 % focal scanning Gaussian frequency filter (shifted and summed) %%%%%%
@@ -51,7 +51,7 @@ imshow(frequency_filter);
 colormap(hot);
 
 % Save for future use
-% save('shifted_filter.mat','frequency_filter');
+save('standard_filter.mat','frequency_filter');
 
 %% setup reconstruction variables
 %filter = zeros(N_pixels, N_pixels); % 2D frequency filter, dimensions of (defocuses, spatial frequencies)
