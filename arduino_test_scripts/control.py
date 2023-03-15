@@ -21,8 +21,9 @@ core = Core()
 # plt.imshow(image, cmap='gray')
 # plt.show()
 
-n_angles = 10
+n_angles = 400
 for i in range(n_angles):
     core.set_relative_position(2000/n_angles)
+    sleep(0.5) # wait for stage to move before triggering camera and leds
     core.set_shutter_open(True)
-    sleep(2)
+    sleep(0.4) # wait for leds to flash and images to be taken before moving to next angle

@@ -189,9 +189,13 @@ MD_MAX72XX mx = MD_MAX72XX(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
               
               Serial.write( byte(1));
 
-              int i;
-              led_square_raster(71, 0, 15, 500);
-              
+/////////////////////////////////////////////////////
+// Put scripts to run here: LED and trigger function
+// This is triggered when the MM shutter is toggled
+// 
+//              led_square_raster(71, 0, 15, 500);
+              aidpc(40, 50);
+////////////////////////////////////////////////////              
               //for (i=1; i<5; ++i)
               //{
                 
@@ -478,12 +482,11 @@ void analogueOut(int channel, byte msb, byte lsb)
   digitalWrite(latchPin, HIGH);
 }
 
-void triggerCamera()
+void triggerCamera(int cam_del)
 {
   digitalWrite(7, HIGH);
-  delay(200);
+  delay(cam_del);
   digitalWrite(7,LOW);
-  delay(200);
 }
 
 void led(int r, int c)
@@ -498,80 +501,128 @@ void ledOff(int r, int c)
   //mx.clear();
 }
 
-void led_square_raster(int c_start, int r_start, int edge_length, int led_delay)
+//void led_square_raster(int c_start, int r_start, int edge_length, int led_delay)
+//{
+//  // central 4 squares (r: 0-7, c: 40 - 55, 72-87)
+//  int c = c_start;
+//  int r = r_start;
+//  int maxR = 8; 
+//  int maxC = c_start + edge_length; 
+//  int dC = 1; 
+//  int dR = 1;
+//  
+//  for (int i=0; i<edge_length*edge_length; i++){
+//    mx.setPoint(r, c, false);
+//    c += dC; 
+//    mx.setPoint(r, c, true);
+//    triggerCamera(cam_del);
+//    delay(led_delay); 
+//
+//    
+//    if (c == maxC)
+//    {
+//      mx.clear();
+//      c = c_start;
+//      r += dR; 
+//      
+//    } 
+//    if (r == maxR)
+//    {
+//      mx.clear();
+//      r = 0;
+//      c-= 32;
+//      c_start -= 32;
+//      maxC -= 32;
+//    } 
+//
+//
+//  }
+
+//}
+
+//void led_square_raster_old(int led_delay, int cam_del)
+//{
+//  // central 4 squares (r: 0-7, c: 40 - 55, 72-87)
+//  int c = 79;
+//  int r = 0;
+//  int maxR = 8; 
+//  int maxC = 87; 
+//  int dC = 1; 
+//  int dR = 1;
+//  
+//  for (int i=0; i<64; i++){
+//    mx.setPoint(r, c, false);
+//    c += dC; 
+//    mx.setPoint(r, c, true);
+//    triggerCamera(cam_del);
+//    delay(led_delay); 
+//
+//    
+//    if (c == maxC)
+//    {
+//      mx.clear();
+//      c = 79;
+//      r += dR; 
+//      
+//    } 
+//    if (r == maxR)
+//    {
+//      mx.clear();
+//      r = 0;
+//    } 
+//
+//
+//  }
+//
+//}
+
+
+void half_leds_on(int radius, int half)
 {
-  // central 4 squares (r: 0-7, c: 40 - 55, 72-87)
-  int c = c_start;
-  int r = r_start;
-  int maxR = 8; 
-  int maxC = c_start + edge_length; 
-  int dC = 1; 
-  int dR = 1;
-  
-  for (int i=0; i<edge_length*edge_length; i++){
-    mx.setPoint(r, c, false);
-    c += dC; 
-    mx.setPoint(r, c, true);
-    triggerCamera();
-    delay(led_delay); 
-
-    
-    if (c == maxC)
-    {
-      mx.clear();
-      c = c_start;
-      r += dR; 
-      
-    } 
-    if (r == maxR)
-    {
-      mx.clear();
-      r = 0;
-      c-= 32;
-      c_start -= 32;
-      maxC -= 32;
-    } 
+  for (int j=0; j<32; j++){
+    for (int i=0; i<32; i++){
+      int rad_sq = sq(i-15.5) + sq(j-15.5);
+      if (half == 3){ // top
+        if (rad_sq < sq(radius) && j<=15){
+        mx.setPoint((7- j % 8), (i + 32*(j/8)), true);
+        }}
+      if (half == 4){ // bottom
+        if (rad_sq < sq(radius) && j>15){
+        mx.setPoint((7- j % 8), (i + 32*(j/8)), true);
+        }}
+      if (half == 1){ // left
+        if (rad_sq < sq(radius) && i<=15){
+        mx.setPoint((7- j % 8), (i + 32*(j/8)), true);
+        }}
+      if (half == 2){ // right
+        if (rad_sq < sq(radius) && i>15){
+        mx.setPoint((7- j % 8), (i + 32*(j/8)), true);
+        }} 
+}
+}}
 
 
-  }
-
+void aidpc(int led_delay, int cam_del)
+{
+  half_leds_on(5, 1); // left
+  triggerCamera(cam_del);
+  delay(led_delay);
+  mx.clear();
+  half_leds_on(5, 2); // right
+  triggerCamera(cam_del);
+  delay(led_delay);
+  mx.clear();
+  half_leds_on(5, 3); // top
+  triggerCamera(cam_del);
+  delay(led_delay);
+  mx.clear();
+  half_leds_on(5, 4); // bottom
+  triggerCamera(cam_del);
+  delay(led_delay);
+  mx.clear();
 }
 
-void led_square_raster_old(int led_delay)
-{
-  // central 4 squares (r: 0-7, c: 40 - 55, 72-87)
-  int c = 79;
-  int r = 0;
-  int maxR = 8; 
-  int maxC = 87; 
-  int dC = 1; 
-  int dR = 1;
-  
-  for (int i=0; i<64; i++){
-    mx.setPoint(r, c, false);
-    c += dC; 
-    mx.setPoint(r, c, true);
-    triggerCamera();
-    delay(led_delay); 
 
-    
-    if (c == maxC)
-    {
-      mx.clear();
-      c = 79;
-      r += dR; 
-      
-    } 
-    if (r == maxR)
-    {
-      mx.clear();
-      r = 0;
-    } 
-
-
-  }
-
-}
 
 /* 
  // This function is called through an interrupt   
