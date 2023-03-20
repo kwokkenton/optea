@@ -178,9 +178,9 @@ void setup()
   // led_square_raster(71, 0, 15, 50);
 //  led_square_raster(300, 200);
 //half_leds_on(5, 2);
-//  led_circle_inside(15.5, 15.5, 5, 5, 2000);
+  led_circle_inside(15.5, 15.5, 5, 5, 2000);
 //  mx.setPoint((7- 16 % 8), (16 + 32*(16/8)), true);
-  triggerCamera(2);
+//  triggerCamera(2);
 
 }
 

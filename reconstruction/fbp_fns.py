@@ -70,16 +70,22 @@ def run_fbp(im, output_dir='tmp_recon', minmax=None, save_recon=False, progbar=F
     return reconstruction_fbp
 
 
-def reconstruct(im, output_dir):
-    reconstruction_fbp = run_fbp(im, progbar=True)
-    min_val = np.min(reconstruction_fbp)
-    max_val = np.max(reconstruction_fbp)
-    print(f'Reconstructed, min={min_val}, max={max_val}. Repeating to rescale.')
-    if 'reconstruction_fbp' in globals():
-        del reconstruction_fbp
-    gc.collect()
-    reconstruction_fbp = run_fbp(im, output_dir=output_dir, minmax=[min_val, max_val], save_recon=True, progbar=True)
-    print(f'Saved reconstruction to {output_dir}.')
+def reconstruct(im, output_dir, rescale=False):
+    if rescale:
+        reconstruction_fbp = run_fbp(im, progbar=True)
+        min_val = np.min(reconstruction_fbp)
+        max_val = np.max(reconstruction_fbp)
+        print(f'Reconstructed, min={min_val}, max={max_val}. Repeating to rescale.')
+        if 'reconstruction_fbp' in globals():
+            del reconstruction_fbp
+        gc.collect()
+        reconstruction_fbp = run_fbp(im, output_dir=output_dir, minmax=[min_val, max_val], save_recon=True, progbar=True)
+        print(f'Saved reconstruction to {output_dir}.')
+    if not rescale:
+        reconstruction_fbp = run_fbp(im, output_dir=output_dir, save_recon=True, progbar=True)
+        min_val = np.min(reconstruction_fbp)
+        max_val = np.max(reconstruction_fbp)
+        print(f'Reconstructed, min={min_val}, max={max_val}. Saved to {output_dir}.')
     return reconstruction_fbp
 
 
