@@ -145,3 +145,40 @@ def align(im, bead_row):
         axs[1].set_title('Aligned bead recon')
         plt.show()
         return im[:,:,optimal:]
+
+
+def get_align_stack(im, bead_row, offsets):
+    bead_im = im[:, bead_row-2:bead_row+3 , :] # get bead row +/- 2
+#     offsets = np.arange(1, 16)
+    offset_list = []
+    maxes = []
+    
+    aligned_imgs = []
+    
+    for offset in offsets[::-1]:
+        # negative crops
+        offset_list.append(-offset)
+        crop_im = bead_im[:,:,:-offset]
+        reconstruction_fbp = run_fbp(crop_im)
+        maxes.append(np.max(reconstruction_fbp))
+        aligned_imgs.append(reconstruction_fbp[2])
+    # zero crop
+    offset_list.append(0)
+    reconstruction_fbp = run_fbp(crop_im)
+    maxes.append(np.max(reconstruction_fbp))
+    aligned_imgs.append(reconstruction_fbp[2])
+    for offset in offsets:
+        # positive crops
+        offset_list.append(offset)
+        crop_im = bead_im[:,:,offset:]
+        reconstruction_fbp = run_fbp(crop_im)
+        maxes.append(np.max(reconstruction_fbp))
+        aligned_imgs.append(reconstruction_fbp[2])
+    plt.figure(figsize=(5,4))
+    plt.plot(offset_list, maxes, '.')
+    plt.xlabel('offset')
+    plt.ylabel('maximum value')
+    plt.show()
+    optimal = offset_list[np.argmax(maxes)]
+    print(f'Best offset: {optimal} pixels')
+    return aligned_imgs, offset_list
