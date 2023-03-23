@@ -317,19 +317,19 @@ def gen_MTF_plots(
     plt.plot(
         frequencies[selection[0]],
         mtfs[selection[0]],
-        "g-",
+        "b-",
         label=f"{np.abs(positions[selection[0]]-focus)}",
     )
     plt.plot(
         frequencies[selection[1]],
         mtfs[selection[1]],
-        "g--",
+        "b--",
         label=f"{np.abs(positions[selection[1]]-focus)}",
     )
     plt.plot(
         frequencies[selection[2]],
         mtfs[selection[2]],
-        "g:",
+        "b:",
         label=f"{np.abs(positions[selection[2]]-focus)}",
     )
 
@@ -340,7 +340,7 @@ def gen_MTF_plots(
     plt.title(f"MTF at f/{f_number}")
     if save_plots:
         plt.tight_layout()
-        plt.savefig(f"plots/selection-mtfs-f{f_number}.png", dpi=1000)
+        plt.savefig(f"plots/selection-mtfs-f{f_number}.png", transparent=True, dpi=300)
     plt.show()
 
     # JAMES-STYLE PLOT
@@ -359,7 +359,7 @@ def gen_MTF_plots(
         np.array(positions) - focus,
         MTF,
         100,
-        cmap=plt.cm.get_cmap("Greens", 10),
+        cmap=plt.cm.get_cmap("Blues", 10),
     )
     plt.plot(
         [frequencies[0][index_20lp], frequencies[0][index_20lp]],
@@ -375,7 +375,7 @@ def gen_MTF_plots(
     plt.colorbar(ticks=list(np.linspace(0, 1, 11)))
     if save_plots:
         plt.tight_layout()
-        plt.savefig(f"plots/contour-f{f_number}.png", dpi=1000)
+        plt.savefig(f"plots/contour-f{f_number}.png", transparent=True, dpi=300)
     plt.show()
 
     print(f"Depth of field = {max_pos - min_pos}")
