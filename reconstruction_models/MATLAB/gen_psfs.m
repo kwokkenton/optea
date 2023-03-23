@@ -10,21 +10,21 @@ N_pixels = 1040; % horizontal number of pixels
 %% Make impulse
 impulse_value = 10; % arbitrary value
 
-
-start_idx = 511;
-N = 32;
+N = 64;
+start_idx = N_pixels/2 - N/2+1;
 end_idx = start_idx + N -1; 
 
-A = zeros(N*N);
-
+% A = zeros(N*N);
+A = (cast(zeros(N*N), 'single'));
+tstart = tic;
 for x_pos = start_idx:end_idx
     for y_pos = start_idx:end_idx
         tic
         % For each location
         % Create impulse response
-        single_point = zeros(N_pixels, N_pixels); 
+        single_point = cast(zeros(N_pixels, N_pixels), 'single'); 
         single_point(y_pos, x_pos) = impulse_value;
-
+        
         % Generate one reconstructed slice
         sino = forward(single_point, fftshifted_MTF, angles, N_pixels);
         im = iradon(sino', -angles, 'linear','Ram-Lak',1,N_pixels);
@@ -35,12 +35,13 @@ for x_pos = start_idx:end_idx
         image_row = y_pos-start_idx + 1;
         index = N*(image_col - 1) + image_row; % correct index for wrapping due to reshaping
         A(:,index) = extracted(:);
-        
+        toc
         % print out to check progress
         index
-        toc
+        
     end
 end
-
+toc(tstart)
 imshow(A);
-
+%%
+%save('simulation_output_64x64.mat','A');
