@@ -4,12 +4,12 @@
 
 %% LR Test cases
 % Image dimensions
-N = 100;
+N = 32;
 
 % Read in sample image
-I = im2double(imread('street1.jpg'));
-start = 150;
-I = I(start:start+N-1, start:start+N-1, 1);
+% I = im2double(imread('street1.jpg'));
+% start = 150;
+% I = I(start:start+N-1, start:start+N-1, 1);
 
 % Case 1: Most basic case
 % A is identity matrix
@@ -31,14 +31,21 @@ I = I(start:start+N-1, start:start+N-1, 1);
 % A is identity matrix
 % b is the image itself
 % use Sparse matrix to cut down on memory use
-A = sparse(make_blurry_filter(N, filter));
-var_gaus = 0.004;
-noisy = imnoise(I,"gaussian",0,var_gaus);
-b = A*noisy(:);
-lucy_debug(I, A, b, 30);
+% A = sparse(make_blurry_filter(N, filter));
+% var_gaus = 0.004;
+% noisy = imnoise(I,"gaussian",0,var_gaus);
+% b = A*noisy(:);
+% lucy_debug(I, A, b, 30);
 
 % Case 4: Synthetic OPT data
+A = load('simulation_output_32x32.mat').A/10;
+b = load('object.mat').x;
+I = load('object.mat').I;
+x = lucy_debug(cast(I, 'double'), A, b(:), 10);
 
+%%
+figure
+imshow(act(A,x))
 %% Predefined functions
 function output = lucy(A, AT, b, iterations)
 % Implementation of Lucy Richardson deconvolution

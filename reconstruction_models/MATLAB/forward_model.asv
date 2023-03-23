@@ -15,18 +15,31 @@ w0 = 6.92e-6; % Minimum beam waist in Gaussian model (m)
 lamb = 525e-9; % (m)
 
 % Define Reconstruction object
-% Case 1: Shepp-logan phantom
-% shepp_logan = phantom(N_pixels); 
+object_name = '';
+value = 10;
 
-% Case 2: Simulated bead phantom
-% B = zeros(N_pixels, N_pixels); 
-% for idx= 520:40:1040 % generate point objects at these equally spaced locations
-%     B(520, idx) = 30;
-% end
+switch object_name
+    % Case 1: Shepp-logan phantom
+    case 'shepp'
+        shepp_logan = phantom(N_pixels); 
+    case 'beads'
+        % Case 2: Simulated bead phantom
+        B = zeros(N_pixels, N_pixels); 
+        for idx= 520:40:1040 % generate point objects at these equally spaced locations
+            B(520, idx) = value;
+        end
+    case 'image'
+        watermelon = imresize(imread("map.jpg"), 1/13);
+        watermelon = padarray(255-rgb2gray(penguin), [513, 513]);
+        B = (cast(watermelon(1:1040 ,1:1040), 'double')/255) ;
+    
+end
+%%
 
-figure
-imshow(B);
-colormap(hot);
+
+imshow(B)
+
+
 %% creates Gaussian frequency filter
 
 defocuses = linspace(-N_pixels*e/2, N_pixels*e/2, N_pixels); % defocuses (mm)
@@ -47,11 +60,11 @@ frequency_filter = create_gaussian_filter(frequencies, defocuses-focal_plane_shi
 %     frequency_filter = frequency_filter + shifted_filter;
 % end
 
-imshow(frequency_filter);
-colormap(hot);
+% imshow(frequency_filter);
+% colormap(hot);
 
 % Save for future use
-save('standard_filter.mat','frequency_filter');
+% save('standard_filter.mat','frequency_filter');
 
 %% setup reconstruction variables
 %filter = zeros(N_pixels, N_pixels); % 2D frequency filter, dimensions of (defocuses, spatial frequencies)
@@ -59,13 +72,21 @@ angles = 360/N_angles *(0:N_angles -1); % define acquisition angles
 fftshifted_MTF = fftshift(frequency_filter,2); % fftshift in frequency direction
 
 %% Run forward model
-sino = forward(B, fftshifted_MTF, angles, N_pixels);
+sino = forward(object, fftshifted_MTF, angles, N_pixels);
 
 % Reconstruct OPT image
 figure('Name', 'Reconstruction');
 im = iradon(sino', -angles, 'linear','Ram-Lak',1,N_pixels);
 imshow(im);
 colormap(hot);
+
+%%
+N = 32;
+start_idx = N_pixels/2 - N/2+1;
+end_idx = start_idx + N -1; 
+x = im(start_idx:end_idx, start_idx:end_idx);
+I = B(start_idx:end_idx, start_idx:end_idx);
+save('object.mat','I', 'x');
 
 %% Convert into Polars
 %im_pad=padarray(im,[200 200]);
