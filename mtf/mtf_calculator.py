@@ -234,6 +234,17 @@ def load_and_divide(img_dir, bg_dir, img_name, bg_light_name, bg_dark_name, crop
     return divided
 
 
+def load_no_divide(img_dir, img_name, crop):
+    img_path = str(img_dir + "/" + img_name)
+    imgs = load_stack(
+        img_path, x_min=crop[0], x_max=crop[1], y_min=crop[2], y_max=crop[3], show=False
+    )
+
+    avg_stack = average_stack(imgs)
+
+    return avg_stack
+
+
 def allComputeMTF(
     edge, position, edge_start, edge_end, desired_width, crop_ratio, plot=False
 ):
