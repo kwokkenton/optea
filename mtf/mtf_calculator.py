@@ -234,6 +234,17 @@ def load_and_divide(img_dir, bg_dir, img_name, bg_light_name, bg_dark_name, crop
     return divided
 
 
+def load_no_divide(img_dir, img_name, crop):
+    img_path = str(img_dir + "/" + img_name)
+    imgs = load_stack(
+        img_path, x_min=crop[0], x_max=crop[1], y_min=crop[2], y_max=crop[3], show=False
+    )
+
+    avg_stack = average_stack(imgs)
+
+    return avg_stack
+
+
 def allComputeMTF(
     edge, position, edge_start, edge_end, desired_width, crop_ratio, plot=False
 ):
@@ -306,19 +317,19 @@ def gen_MTF_plots(
     plt.plot(
         frequencies[selection[0]],
         mtfs[selection[0]],
-        "g-",
+        "b-",
         label=f"{np.abs(positions[selection[0]]-focus)}",
     )
     plt.plot(
         frequencies[selection[1]],
         mtfs[selection[1]],
-        "g--",
+        "b--",
         label=f"{np.abs(positions[selection[1]]-focus)}",
     )
     plt.plot(
         frequencies[selection[2]],
         mtfs[selection[2]],
-        "g:",
+        "b:",
         label=f"{np.abs(positions[selection[2]]-focus)}",
     )
 
@@ -329,7 +340,7 @@ def gen_MTF_plots(
     plt.title(f"MTF at f/{f_number}")
     if save_plots:
         plt.tight_layout()
-        plt.savefig(f"plots/selection-mtfs-f{f_number}.png", dpi=1000)
+        plt.savefig(f"plots/selection-mtfs-f{f_number}.png", transparent=True, dpi=300)
     plt.show()
 
     # JAMES-STYLE PLOT
@@ -348,7 +359,7 @@ def gen_MTF_plots(
         np.array(positions) - focus,
         MTF,
         100,
-        cmap=plt.cm.get_cmap("Greens", 10),
+        cmap=plt.cm.get_cmap("Blues", 10),
     )
     plt.plot(
         [frequencies[0][index_20lp], frequencies[0][index_20lp]],
@@ -364,7 +375,7 @@ def gen_MTF_plots(
     plt.colorbar(ticks=list(np.linspace(0, 1, 11)))
     if save_plots:
         plt.tight_layout()
-        plt.savefig(f"plots/contour-f{f_number}.png", dpi=1000)
+        plt.savefig(f"plots/contour-f{f_number}.png", transparent=True, dpi=300)
     plt.show()
 
     print(f"Depth of field = {max_pos - min_pos}")
