@@ -10,8 +10,21 @@ import math
 import numpy as np
 from skimage import io
 import matplotlib.pyplot as plt
+import matplotlib
 import itertools
 import pickle
+
+
+matplotlib.use("pgf")
+matplotlib.rcParams.update({
+    "pgf.texsystem": "pdflatex",
+    'font.family': 'serif',
+    'text.usetex': True,
+    'pgf.rcfonts': False,
+})
+
+plt.rcParams['figure.figsize'] = [4, 4]
+plt.figure().set_size_inches(w=4.7747, h=4.2)
 
 
 def _ExtractPatch(sample, edge_start, edge_end, desired_width, crop_ratio):
@@ -308,10 +321,10 @@ def gen_MTF_plots(
 
     # ALL MTF PLOT
 
-    plt.title(f"all mtfs, f/{f_number}")
-    if save_plots:
-        plt.savefig(f"plots/all-mtfs-f{f_number}.png")
-    plt.show()
+    plt.title(f"all mtfs, NA {f_number}")
+#     if save_plots:
+#         plt.savefig(f"plots/all-mtfs-f{f_number}.png")
+#     plt.show()
 
     # SELECTION OF MTFS
     plt.plot(
@@ -337,11 +350,11 @@ def gen_MTF_plots(
     plt.legend(title="Defocus (mm)")
     plt.xlabel("line pairs per mm")
     plt.ylabel("MTF")
-    plt.title(f"MTF at f/{f_number}")
-    if save_plots:
-        plt.tight_layout()
-        plt.savefig(f"plots/selection-mtfs-f{f_number}.png", transparent=True, dpi=300)
-    plt.show()
+    plt.title(f"MTF at NA {f_number}")
+#     if save_plots:
+#         plt.tight_layout()
+#         plt.savefig(f"plots/selection-mtfs-f{f_number}.png", transparent=True, dpi=300)
+#     plt.show()
 
     # JAMES-STYLE PLOT
     mtf_len = min([len(mtf) for mtf in mtfs])
@@ -370,13 +383,15 @@ def gen_MTF_plots(
 
     plt.xlim(0, 0.5 / 6.45e-3)
     plt.xlabel("line pairs per mm")
-    plt.ylabel("Defocus (mm)")
-    plt.title(f"MTF versus defocus at f/{f_number}")
-    plt.colorbar(ticks=list(np.linspace(0, 1, 11)))
+    plt.ylabel("defocus (mm)")
+    # plt.title(f"MTF versus defocus at NA {f_number}")
+    plt.text(0.9, 0.9, f'NA {f_number}', horizontalalignment='center', verticalalignment='center', transform=plt.gca().transAxes)
+    cbar = plt.colorbar(ticks=list(np.linspace(0, 1, 11)))
+    cbar.ax.set_ylabel('MTF', rotation=270)
     if save_plots:
         plt.tight_layout()
-        plt.savefig(f"plots/contour-f{f_number}.png", transparent=True, dpi=300)
-    plt.show()
+        plt.savefig(f"plots/contour-f{f_number}.pgf")
+#     plt.show()
 
     print(f"Depth of field = {max_pos - min_pos}")
 
