@@ -21,44 +21,73 @@ switch object_name
     case 'shepp'
         shepp_logan = phantom(N_pixels); 
     case 'beads'
-        % Case 2: Simulated bead phantom
-        B = zeros(N_pixels, N_pixels); 
-        for idx= 520:40:1040 % generate point objects at these equally spaced locations
-            B(520, idx) = value;
+        % Case 2: Simulated bead phantom====
+        object = zeros(N_pixels, N_pixels); 
+        for idx= 520:40:1000 % generate point objects at these equally spaced locations
+            object(520, idx) = value;
+            object(520, idx+1) = value;
+            object(521, idx) = value;
+            object(521, idx+1) = value;
         end
     case 'image'
         watermelon = imresize(imread("map.jpg"), 1/13);
         watermelon = padarray(255-rgb2gray(watermelon), [513, 513]);
-        B = (cast(watermelon(1:1040 ,1:1040), 'double')/255) ;
+        object = (cast(watermelon(1:1040 ,1:1040), 'double')/255) ;
     
 end
 
-imshow(B)
+imshow(object)
+%% Generates/ loads in MTF filter
 
+focal_plane_shift = 0;  %(mm)
+filter_name = 'f6'; 
 
-%% creates Gaussian frequency filter
-
+% parameters
 defocuses = linspace(-N_pixels*e/2, N_pixels*e/2, N_pixels); % defocuses (mm)
 nyquist_freq = 1/(2*e);
 frequencies = (-N_pixels/2:N_pixels/2-1)/(e*N_pixels);
-% this does not have the zero spatial freq: linspace(-nyquist_freq, nyquist_freq, N_pixels);
 
+% Read in MTF from .mat
+S = load('mtf_filters.mat');
+
+switch filter_name
+    % These are experimental MTFs, tidied up in Python and imported %%%%%%%
+    case 'f6'
+        frequency_filter = S.f6;
+    case 'f11'
+        frequency_filter = S.f11;
+    case 'f17'
+        frequency_filter = S.f17;
+    case 'f26'
+        frequency_filter = S.f26;
+    % These are simulated MTFs, generated in MATLAB %%%%%%%%%%%%%%%%%%%%%%%
+    case 'gaussian'
+        % creates Gaussian frequency filter
+        frequency_filter = create_gaussian_filter(frequencies, defocuses, N_pixels, w0, lamb); 
+    case 'shifted'
+        % focal shifted mtf using Gaussian frequency filter
+        frequency_filter = create_gaussian_filter(frequencies, defocuses-focal_plane_shift, N_pixels, w0, lamb); 
+    case 'focal_scanning'
+        % focal scanning Gaussian frequency filter (shifted and summed)
+        shifts = 0:0.75:3;  % (mm)
+        frequency_filter = create_gaussian_filter(frequencies, defocuses, N_pixels, w0, lamb)/length(shifts);
+        for i= 0:length(shifts)-1
+            focal_plane_shift = shifts(i+1);
+            shifted_filter = create_gaussian_filter(frequencies, defocuses-focal_plane_shift, N_pixels, w0, lamb)/length(shifts);
+            frequency_filter = frequency_filter + shifted_filter;
+        end
+    case 'no_filter'
+        frequency_filter = ones(N_pixels, N_pixels);
+end
 %%
-% normal filter %%%%%
-focal_plane_shift = 0;  %(mm)
-frequency_filter = create_gaussian_filter(frequencies, defocuses-focal_plane_shift, N_pixels, w0, lamb); 
-
-% focal scanning Gaussian frequency filter (shifted and summed) %%%%%%
-% shifts = 0:0.75:3;  % (mm)
-% frequency_filter = create_gaussian_filter(frequencies, defocuses, N_pixels, w0, lamb)/length(shifts);
-% for i= 0:length(shifts)-1
-%     focal_plane_shift = shifts(i+1);
-%     shifted_filter = create_gaussian_filter(frequencies, defocuses-focal_plane_shift, N_pixels, w0, lamb)/length(shifts);
-%     frequency_filter = frequency_filter + shifted_filter;
-% end
-
+% Display frequency filter
+h = pcolor(frequencies, defocuses,  frequency_filter);
 % imshow(frequency_filter);
-% colormap(hot);
+colormap(hot);
+set(h, 'EdgeColor', 'none') % remove grid lines as they will make image black
+xlabel('Spatial frequencies (lp/mm)')
+ylabel('defocuses (mm)')
+title(filter_name); % Place title here
 
 % Save for future use
 % save('standard_filter.mat','frequency_filter');
@@ -76,22 +105,24 @@ figure('Name', 'Reconstruction');
 im = iradon(sino', -angles, 'linear','Ram-Lak',1,N_pixels);
 imshow(im);
 colormap(hot);
-
 %%
-N = 32;
-start_idx = N_pixels/2 - N/2+1;
-end_idx = start_idx + N -1; 
-x = im(start_idx:end_idx, start_idx:end_idx);
-I = B(start_idx:end_idx, start_idx:end_idx);
-save('object.mat','I', 'x');
+imwrite(im,'f6_beads.tif');
+%%
+% N = 32;
+% start_idx = N_pixels/2 - N/2+1;
+% end_idx = start_idx + N -1; 
+% x = im(start_idx:end_idx, start_idx:end_idx);
+% I = B(start_idx:end_idx, start_idx:end_idx);
+% save('object.mat','I', 'x');
 
 %% Convert into Polars
-%im_pad=padarray(im,[200 200]);
-% [a, b]=size(im);
-% imP = ImToPolar (im, 0, 1, b/2,2*a);
-% figure('Name', 'Polar Transform')
-% imshow(imP);
-% colormap(hot);
+% In case we wanted to see what the image looks like in polars
+im_pad = padarray(im,[200 200]);
+[a, b] = size(im);
+imP = ImToPolar (im, 0, 1, b/2,2*a);
+figure('Name', 'Polar Transform')
+imshow(imP);
+colormap(hot);
 %% Functions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % function sinogram = forward(slice, fftshifted_MTF, angles, N_pixels)
 %     % slice is a 2D matrix
@@ -113,12 +144,12 @@ save('object.mat','I', 'x');
 % end
 
 function frequency_filter = create_gaussian_filter(frequencies, defocuses, N_pixels, w0, lamb)
-    % creates a Gaussian frequency filter
-    % frequencies are those sampled
-    % defocuses are in mm
-    % N_pixels 
-    % w0 is in m
-    % lamb is in m
+% CREATE_GAUSSIAN_FILTER: creates a Gaussian frequency filter
+% frequencies are those sampled
+% defocuses are in mm
+% N_pixels 
+% w0 is in m
+% lamb is in m
     frequency_filter = zeros(N_pixels, N_pixels);
     %t = linspace(-N_pixels*e/2e3, N_pixels*2/2e3, N_pixels);
     beam_waist_depths = beam_waist(defocuses/1e3, w0, lamb); 
@@ -129,8 +160,8 @@ function frequency_filter = create_gaussian_filter(frequencies, defocuses, N_pix
 end
 
 function profile = gaussian(x, sigma)
-    % obtains outputs of a Gaussian at values x, width sigma
-    % units of x and sigma must match
+% obtains outputs of a Gaussian at values x, width sigma
+% units of x and sigma must match
     profile = exp(-x.^2/(2*sigma^2));
 end
 
