@@ -135,5 +135,6 @@ ui-tests/playwright-report
 # images
 *.tif
 *.tiff
+*.png
 
 .pkl
